@@ -34,7 +34,7 @@ set(VERSION_TWEAK 0)
 set(VERSION_SUFFIX "")
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose build type" FORCE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose build type" FORCE)
 endif()
 
 add_compile_options(-Wall -Wextra)
@@ -46,15 +46,7 @@ set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(INCLUDE_DIR "${SRC_DIR}/include")
 
 find_package(ZLIB REQUIRED)
-find_package(PkgConfig REQUIRED)
-
-pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET
-    libavformat>=61.7.0
-    libavcodec>=61.19.0
-    libswscale>=8.3.0
-    libavutil>=59.39.0
-    libswresample>=5.3.0
-)
+find_package(FFMPEG REQUIRED)
 
 file(GLOB CORE_SOURCES
     "src/core/audiosource.cpp"
@@ -79,6 +71,7 @@ target_include_directories(ffms2 PUBLIC
     src/config
     src/core
     src/vapoursynth
+    ${FFMPEG_INCLUDE_DIRS}
 )
 
 target_compile_definitions(ffms2 PRIVATE
@@ -91,30 +84,32 @@ if(NOT BUILD_SHARED_LIBS)
     target_compile_definitions(ffms2 INTERFACE FFMS_STATIC)
 endif()
 
-target_link_libraries(ffms2 PUBLIC ZLIB::ZLIB PkgConfig::FFMPEG)
+target_link_directories(ffms2 PRIVATE ${FFMPEG_LIBRARY_DIRS})
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+target_link_libraries(ffms2 PUBLIC ZLIB::ZLIB PRIVATE ${FFMPEG_LIBRARIES})
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set_target_properties(ffms2 PROPERTIES CXX_VISIBILITY_PRESET hidden)
 endif()
 
 if(ENABLE_AVISYNTH)
-  set(AVISYNTHPLUS_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../AviSynthPlus/avs_core/include"
-      CACHE PATH "Path to the AviSynthPlus 'avs_core/include' directory")
+    set(AVISYNTHPLUS_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../AviSynthPlus/avs_core/include"
+        CACHE PATH "Path to the AviSynthPlus 'avs_core/include' directory")
 
-  if(NOT EXISTS "${AVISYNTHPLUS_INCLUDE_DIR}/avisynth.h")
-    message(FATAL_ERROR "Avisynth support was enabled, but avisynth.h was not found at the expected location: ${AVISYNTHPLUS_INCLUDE_DIR}\n"
-                        "Please ensure the AviSynthPlus repository is in the same parent directory as ffms2, or manually set the AVISYNTHPLUS_INCLUDE_DIR variable.")
-  endif()
+    if(NOT EXISTS "${AVISYNTHPLUS_INCLUDE_DIR}/avisynth.h")
+        message(FATAL_ERROR "Avisynth support was enabled, but avisynth.h was not found at the expected location: ${AVISYNTHPLUS_INCLUDE_DIR}\n"
+                            "Please ensure the AviSynthPlus repository is in the same parent directory as ffms2, or manually set the AVISYNTHPLUS_INCLUDE_DIR variable.")
+    endif()
 
-  message(STATUS "Avisynth support enabled (using headers from ${AVISYNTHPLUS_INCLUDE_DIR})")
+    message(STATUS "Avisynth support enabled (using headers from ${AVISYNTHPLUS_INCLUDE_DIR})")
 
-  file(GLOB AVISYNTH_SOURCES
-    "src/avisynth/avssources.cpp"
-    "src/avisynth/avisynth.cpp"
-  )
-  target_sources(ffms2 PRIVATE ${AVISYNTH_SOURCES})
-  target_include_directories(ffms2 PRIVATE src/avisynth ${AVISYNTHPLUS_INCLUDE_DIR})
-  target_compile_definitions(ffms2 PRIVATE AVISYNTH)
+    file(GLOB AVISYNTH_SOURCES
+        "src/avisynth/avssources.cpp"
+        "src/avisynth/avisynth.cpp"
+    )
+    target_sources(ffms2 PRIVATE ${AVISYNTH_SOURCES})
+    target_include_directories(ffms2 PRIVATE src/avisynth ${AVISYNTHPLUS_INCLUDE_DIR})
+    target_compile_definitions(ffms2 PRIVATE AVISYNTH)
 endif()
 
 add_executable(ffmsindex src/index/ffmsindex.cpp)
