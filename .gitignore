@@ -4,6 +4,13 @@
 /testing
 /todo.txt
 /dist
+/build
+/dav1d
+/FFmpeg
+/libjpeg-turbo
+/libjxl
+/libpng
+/zlib
 
 # /build-msvc/
 /build-msvc/*.sdf
