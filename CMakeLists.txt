@@ -29,7 +29,7 @@ option(ENABLE_DEBUG "Enable debug build" OFF)
 
 set(VERSION_MAJOR 5)
 set(VERSION_MINOR 1)
-set(VERSION_PATCH 0)
+set(VERSION_PATCH 1)
 set(VERSION_TWEAK 0)
 set(VERSION_SUFFIX "")
 
