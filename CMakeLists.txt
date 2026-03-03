@@ -73,21 +73,7 @@ set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(INCLUDE_DIR "${SRC_DIR}/include")
 
 find_package(ZLIB REQUIRED)
-
-find_package(PkgConfig QUIET)
-if(PKG_CONFIG_FOUND)
-    pkg_check_modules(FFMPEG 
-        libavformat>=61.7.0 
-        libavcodec>=61.19.0 
-        libswscale>=8.3.0 
-        libavutil>=59.39.0 
-        libswresample>=5.3.0
-    )
-endif()
-
-if(NOT FFMPEG_FOUND)
-    find_package(FFMPEG REQUIRED)
-endif()
+find_package(FFMPEG REQUIRED)
 
 file(GLOB CORE_SOURCES
     "src/core/audiosource.cpp"
