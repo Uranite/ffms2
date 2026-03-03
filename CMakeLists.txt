@@ -16,10 +16,14 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     endif()
 endif()
 
-if(WIN32)
-    if(NOT BUILD_SHARED_LIBS)
+if(WIN32 OR CYGWIN)
+    if(MINGW OR CYGWIN)
+        option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+    endif()
+    
+    if(NOT BUILD_SHARED_LIBS AND MSVC)
         set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-    else()
+    elseif(MSVC)
         set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
     endif()
 endif()
@@ -43,12 +47,18 @@ option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(ENABLE_AVISYNTH "Enable AviSynth+ plugin" OFF)
 option(ENABLE_DEBUG "Enable debug build" OFF)
 
-# Currently unused, could be used later for install capability
-set(VERSION_MAJOR 5)
-set(VERSION_MINOR 1)
-set(VERSION_PATCH 1)
-set(VERSION_TWEAK 0)
-set(VERSION_SUFFIX "")
+file(READ "include/ffms.h" FFMS_HEADER_CONTENT)
+string(REGEX MATCH "define FFMS_VERSION \\(\\(([0-9]+) << 24\\) \\| \\(([0-9]+) << 16\\) \\| \\(([0-9]+) << 8\\) \\| ([0-9]+)\\)" _ ${FFMS_HEADER_CONTENT})
+set(VERSION_MAJOR ${CMAKE_MATCH_1})
+set(VERSION_MINOR ${CMAKE_MATCH_2})
+set(VERSION_PATCH ${CMAKE_MATCH_3})
+set(VERSION_TWEAK ${CMAKE_MATCH_4})
+if(VERSION_TWEAK GREATER 0)
+    set(FFMS_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}.${VERSION_TWEAK}")
+else()
+    set(FFMS_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
+endif()
+message(STATUS "FFMS2 Version: ${FFMS_VERSION}")
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose build type" FORCE)
@@ -63,7 +73,21 @@ set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(INCLUDE_DIR "${SRC_DIR}/include")
 
 find_package(ZLIB REQUIRED)
-find_package(FFMPEG REQUIRED)
+
+find_package(PkgConfig QUIET)
+if(PKG_CONFIG_FOUND)
+    pkg_check_modules(FFMPEG 
+        libavformat>=61.7.0 
+        libavcodec>=61.19.0 
+        libswscale>=8.3.0 
+        libavutil>=59.39.0 
+        libswresample>=5.3.0
+    )
+endif()
+
+if(NOT FFMPEG_FOUND)
+    find_package(FFMPEG REQUIRED)
+endif()
 
 file(GLOB CORE_SOURCES
     "src/core/audiosource.cpp"
@@ -144,3 +168,22 @@ install(TARGETS ffms2 ffmsindex
 )
 
 install(DIRECTORY ${INCLUDE_DIR}/ DESTINATION include)
+
+set(prefix ${CMAKE_INSTALL_PREFIX})
+set(exec_prefix "\${prefix}")
+set(libdir "\${prefix}/lib")
+set(includedir "\${prefix}/include")
+
+if(WIN32 AND NOT MINGW)
+    set(ZLIB_LDFLAGS "")
+else()
+    set(ZLIB_LDFLAGS "-lz")
+endif()
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/ffms2.pc.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/ffms2.pc"
+    @ONLY
+)
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/ffms2.pc" DESTINATION lib/pkgconfig)
