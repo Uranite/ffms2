@@ -27,6 +27,7 @@ option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(ENABLE_AVISYNTH "Enable AviSynth+ plugin" OFF)
 option(ENABLE_DEBUG "Enable debug build" OFF)
 
+# Currently unused, could be used later for install capability
 set(VERSION_MAJOR 5)
 set(VERSION_MINOR 1)
 set(VERSION_PATCH 1)
