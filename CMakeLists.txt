@@ -73,7 +73,14 @@ set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(INCLUDE_DIR "${SRC_DIR}/include")
 
 find_package(ZLIB REQUIRED)
-find_package(FFMPEG REQUIRED)
+
+find_package(PkgConfig QUIET)
+if(PKG_CONFIG_FOUND)
+    pkg_check_modules(FFMPEG QUIET libavformat libavcodec libswscale libavutil libswresample)
+endif()
+if(NOT FFMPEG_FOUND)
+    find_package(FFMPEG REQUIRED)
+endif()
 
 file(GLOB CORE_SOURCES
     "src/core/audiosource.cpp"
@@ -141,7 +148,9 @@ endif()
 
 add_executable(ffmsindex src/index/ffmsindex.cpp)
 
-target_link_libraries(ffmsindex PRIVATE ffms2)
+target_link_directories(ffmsindex PRIVATE ${FFMPEG_LIBRARY_DIRS})
+target_include_directories(ffmsindex PRIVATE ${FFMPEG_INCLUDE_DIRS})
+target_link_libraries(ffmsindex PRIVATE ffms2 ${FFMPEG_LIBRARIES})
 
 if(WIN32)
     target_link_options(ffmsindex PRIVATE -municode)
